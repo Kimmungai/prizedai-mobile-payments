@@ -1,0 +1,17 @@
+{
+    "name": "prizedai/prizedai-mobile-payments",
+    "description": "This plugin adds Mpesa to WooCommerce payment gateways. Simply add your Daraja API credentials to use the plugin.",
+    "type": "project",
+    "license": "GPL",
+    "authors": [
+        {
+            "name": "kimmungai",
+            "email": "kimpita9@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload":{
+      "psr-4":{"PrizedAI\\":"./inc"}
+    }
+}
