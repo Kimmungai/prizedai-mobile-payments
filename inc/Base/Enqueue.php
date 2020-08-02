@@ -9,6 +9,8 @@ class Enqueue extends BaseController
   public function register()
   {
     add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+    add_action( 'wp_enqueue_scripts', array( $this, 'enqueue' ) );
+
   }
 
   public function enqueue()
