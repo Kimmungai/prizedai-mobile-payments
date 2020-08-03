@@ -17,5 +17,6 @@ class Enqueue extends BaseController
   {
     wp_enqueue_style( 'PrizedaiMobilePaymentsStyles', $this->plugin_url.'assets/css/master.css' );
     wp_enqueue_script( 'PrizedaiMobilePaymentsScript', $this->plugin_url.'assets/js/main.js' );
+    wp_enqueue_script( 'PrizedaiMobilePaymentsCheckoutScript', $this->plugin_url.'assets/js/checkout.js' );
   }
 }

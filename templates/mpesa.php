@@ -3,7 +3,7 @@
   <?php settings_errors() ?>
   <form class="" action="options.php" method="post">
     <?php
-      settings_fields('prizedai_mobile_payments_options_group');
+      settings_fields('prizedai_mobile_payments_plugin_settings');
       do_settings_sections( 'prizedai_mobile_payments_plugin' );
       submit_button();
      ?>

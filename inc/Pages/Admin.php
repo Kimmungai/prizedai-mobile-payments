@@ -6,6 +6,8 @@ namespace PrizedAI\Pages;
 use PrizedAI\Base\BaseController;
 use PrizedAI\Api\SettingsApi;
 use PrizedAI\Api\Callbacks\AdminCallbacks;
+use PrizedAI\Api\Callbacks\ManagerCallbacks;
+
 
 /**
  *
@@ -16,11 +18,15 @@ class Admin extends BaseController
   public $pages;
   public $subpages;
   public $callbacks;
+  public $callbacks_mngr;
+
 
   public function register()
   {
     $this->settings = new SettingsApi();
     $this->callbacks = new AdminCallbacks();
+    $this->callbacks_mngr = new ManagerCallbacks();
+
     $this->setPages();
     $this->setSubpages();
     $this->setSettings();
@@ -64,30 +70,20 @@ class Admin extends BaseController
   {
     $args = array(
       array(
-        'option_group' => 'prizedai_mobile_payments_options_group',
-        'option_name' => 'consumer_key',
-        'callback' => array( $this->callbacks, 'prizedaiMobilePaymentsOptionsGroup' ),
-
-      ),
-      array(
-        'option_group' => 'prizedai_mobile_payments_options_group',
-        'option_name' => 'passkey',
-        'callback' => array( $this->callbacks, 'prizedaiMobilePaymentsOptionsGroup' ),
-
-      ),
-      array(
-        'option_group' => 'prizedai_mobile_payments_options_group',
-        'option_name' => 'shortcode',
-        'callback' => array( $this->callbacks, 'prizedaiMobilePaymentsOptionsGroup' ),
-
-      ),
-      array(
-        'option_group' => 'prizedai_mobile_payments_options_group',
-        'option_name' => 'url',
-        'callback' => array( $this->callbacks, 'prizedaiMobilePaymentsOptionsGroup' ),
-
-      ),
+        'option_group' => 'prizedai_mobile_payments_plugin_settings',
+        'option_name' => 'prizedai_mobile_payments_plugin',
+        'callback' => array( $this->callbacks_mngr, 'checkboxSanitize' ),
+      )
     );
+    /*foreach ($this->managers as $key => $value)
+    {
+      $args[] = array(
+        'option_group' => 'prizedai_mobile_payments_plugin_settings',
+        'option_name' => $key,
+        'callback' => array( $this->callbacks_mngr, 'checkboxSanitize' ),
+
+      );
+    }*/
 
     $this->settings->setSettings($args);
   }
@@ -97,8 +93,8 @@ class Admin extends BaseController
     $args = array(
       array(
         'id' => 'prizedai_mobile_payments_admin_index',
-        'title' => 'Mpesa',
-        'callback' => array( $this->callbacks, 'prizedaiMobilePaymentsAdminSection' ),
+        'title' => 'Settings manager',
+        'callback' => array( $this->callbacks_mngr, 'prizedaiMobilePaymentsAdminSectionManager' ),
         'page' => 'prizedai_mobile_payments_plugin'
 
       ),
@@ -108,59 +104,24 @@ class Admin extends BaseController
   }
 
   public function setFields()
-  {
-    $args = array(
-      array(
-        'id' => 'consumer_key',
-        'title' => 'Consumer key',
-        'callback' => array( $this->callbacks, 'prizedaiMobilePaymentsConsumerKey' ),
-        'page' => 'prizedai_mobile_payments_plugin',
-        'section' => 'prizedai_mobile_payments_admin_index',
-        'args' => array(
-          'label_for' => 'consumer_key',
-          'class' => 'example-class'
-        )
-      ),
+	{
+    $args = array();
 
-        array(
-          'id' => 'passkey',
-          'title' => 'Passkey',
-          'callback' => array( $this->callbacks, 'prizedaiMobilePaymentsPasskey' ),
-          'page' => 'prizedai_mobile_payments_plugin',
-          'section' => 'prizedai_mobile_payments_admin_index',
-          'args' => array(
-            'label_for' => 'passkey',
-            'class' => 'example-class'
-          ),
-
-      ),
-      array(
-        'id' => 'shortcode',
-        'title' => 'Short code',
-        'callback' => array( $this->callbacks, 'prizedaiMobilePaymentsShortCode' ),
-        'page' => 'prizedai_mobile_payments_plugin',
-        'section' => 'prizedai_mobile_payments_admin_index',
-        'args' => array(
-          'label_for' => 'shortcode',
-          'class' => 'example-class'
-        ),
-
-    ),
-    array(
-      'id' => 'url',
-      'title' => 'Url',
-      'callback' => array( $this->callbacks, 'prizedaiMobilePaymentsUrl' ),
-      'page' => 'prizedai_mobile_payments_plugin',
-      'section' => 'prizedai_mobile_payments_admin_index',
-      'args' => array(
-        'label_for' => 'url',
-        'class' => 'example-class'
-      ),
-
-  ),
-    );
-
-    $this->settings->setFields($args);
-  }
+    foreach ( $this->managers as $key => $value ) {
+			$args[] = array(
+				'id' => $key,
+				'title' => $value,
+				'callback' => array( $this->callbacks_mngr, 'prizedaiMobilePaymentsCheckboxField' ),
+				'page' => 'prizedai_mobile_payments_plugin',
+				'section' => 'prizedai_mobile_payments_admin_index',
+				'args' => array(
+					'option_name' => 'prizedai_mobile_payments_plugin',
+					'label_for' => $key,
+					'class' => 'ui-toggle'
+				)
+			);
+		}
+		$this->settings->setFields( $args );
+	}
 
 }
