@@ -18,5 +18,9 @@ class AdminCallbacks extends BaseController
   {
     return require_once("$this->plugin_path/templates/mpesa.php");
   }
-  
+  public function nogo()
+  {
+    return require_once("$this->plugin_path/templates/nogo.php");
+  }
+
 }

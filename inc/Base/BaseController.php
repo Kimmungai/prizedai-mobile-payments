@@ -10,6 +10,9 @@ class BaseController
   public $plugin_url;
   public $plugin;
   public $managers = array();
+  public $mpesaFields = array();
+  public $smsFields = array();
+
 
 
   public function __construct()
@@ -20,9 +23,23 @@ class BaseController
     $this->plugin = "$this->plugin_basename/$this->plugin_basename.php";
 
     $this->managers = array(
-      'cpt_manager' => 'Activate CPT Manager',
-      'taxonomy_manager' => 'Activate Taxonomy Manager',
-      'media_widget' => 'Activate Media Widget',
+      'cpt_manager' => 'Save payment records',
+      'mpesa' => 'Mpesa Payments',
+      'sms' => 'Send sms',
     );
+
+    $this->mpesaFields = array(
+      'consumer_key' => 'Consumer key',
+      'consumer_secret' => 'Consumer secret',
+      'passkey' => 'Passkey',
+      'shortcode' => 'Short code',
+    );
+
+    $this->smsFields = array(
+      'username' => 'Username',
+      'apikey' => 'Api key',
+      'from' => 'From',
+    );
+
   }
 }

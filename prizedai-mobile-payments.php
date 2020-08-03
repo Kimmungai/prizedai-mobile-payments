@@ -122,11 +122,11 @@ function prizedAiMobilePaymentsWoocommerceInit() {
         class PrizedAIWoocommerceMpesaGateway extends WC_Payment_Gateway {
           public function __construct() {
 
-$this->id = 'misha'; // payment gateway plugin ID
+$this->id = 'prizedai'; // payment gateway plugin ID
 $this->icon = ''; // URL of the icon that will be displayed on checkout page near your gateway name
 $this->has_fields = true; // in case you need a custom credit card form
-$this->method_title = 'Misha Gateway';
-$this->method_description = 'Description of Misha payment gateway'; // will be displayed on the options page
+$this->method_title = 'PrizedAI payments';
+$this->method_description = 'Accept mpesa payments easily. Your customers will receive an STK push and automatically redirected.'; // will be displayed on the options page
 
 // gateways can support subscriptions, refunds, saved payment methods,
 // but in this tutorial we begin with simple payments
@@ -161,7 +161,7 @@ public function init_form_fields(){
 $this->form_fields = array(
 'enabled' => array(
 'title'       => 'Enable/Disable',
-'label'       => 'Enable Misha Gateway',
+'label'       => 'Enable PrizedAI mobile payments',
 'type'        => 'checkbox',
 'description' => '',
 'default'     => 'no'
@@ -170,7 +170,7 @@ $this->form_fields = array(
 'title'       => 'Title',
 'type'        => 'text',
 'description' => 'This controls the title which the user sees during checkout.',
-'default'     => 'Credit Card',
+'default'     => 'Mpesa',
 'desc_tip'    => true,
 ),
 'description' => array(
@@ -179,30 +179,6 @@ $this->form_fields = array(
 'description' => 'This controls the description which the user sees during checkout.',
 'default'     => 'Pay with your credit card via our super-cool payment gateway.',
 ),
-'testmode' => array(
-'title'       => 'Test mode',
-'label'       => 'Enable Test Mode',
-'type'        => 'checkbox',
-'description' => 'Place the payment gateway in test mode using test API keys.',
-'default'     => 'yes',
-'desc_tip'    => true,
-),
-'test_publishable_key' => array(
-'title'       => 'Test Publishable Key',
-'type'        => 'text'
-),
-'test_private_key' => array(
-'title'       => 'Test Private Key',
-'type'        => 'password',
-),
-'publishable_key' => array(
-'title'       => 'Live Publishable Key',
-'type'        => 'text'
-),
-'private_key' => array(
-'title'       => 'Live Private Key',
-'type'        => 'password'
-)
 );
 }
 
@@ -263,18 +239,11 @@ public function payment_fields() {
 	do_action( 'woocommerce_credit_card_form_start', $this->id );
 
 	// I recommend to use inique IDs, because other gateways could already use #ccNo, #expdate, #cvc
-	echo '<div class="form-row form-row-wide"><label>Card Number <span class="required">*</span></label>
-		<input id="misha_ccNo" type="text" autocomplete="off">
-		</div>
-		<div class="form-row form-row-first">
-			<label>Expiry Date <span class="required">*</span></label>
-			<input id="misha_expdate" type="text" autocomplete="off" placeholder="MM / YY">
-		</div>
-		<div class="form-row form-row-last">
-			<label>Card Code (CVC) <span class="required">*</span></label>
-			<input id="misha_cvv" type="password" autocomplete="off" placeholder="CVC">
-      <a href="/index.php?scanner_action=1">nyau</a>
-		</div>
+	echo '<div class="form-row">
+          <label>Mpesa phone number <span class="required">*</span></label>
+		      <input id="prizedai-mpesa-number" type="text" autocomplete="off">
+          <small class="hidden" id="prizedai-mpesa-number-helper">Valid format: <strong>+254xxxxxxxxx</strong></small>
+		    </div>
 		<div class="clear"></div>';
 
 	do_action( 'woocommerce_credit_card_form_end', $this->id );
@@ -283,7 +252,7 @@ public function payment_fields() {
 
 }
 
-public function validate_fields(){
+/*public function validate_fields(){
 
 	if( empty( $_POST[ 'billing_first_name' ]) ) {
 		wc_add_notice(  'First name is required!', 'error' );
@@ -291,7 +260,7 @@ public function validate_fields(){
 	}
 	return true;
 
-}
+}*/
 
 public function process_payment( $order_id ) {
 
@@ -496,11 +465,11 @@ function mpesa_request_payment(){
 
             'Amount' => $total,
 
-            'PartyA' => 254790643963,
+            'PartyA' => $_POST['mpesaPhoneNumber'],
 
             'PartyB' => $shortcd,
 
-            'PhoneNumber' => 254790643963,
+            'PhoneNumber' => $_POST['mpesaPhoneNumber'],
 
             'CallBackURL' => $callback_url.'/index.php?scanner_action=1',
 
