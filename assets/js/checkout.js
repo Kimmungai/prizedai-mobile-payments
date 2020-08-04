@@ -67,3 +67,8 @@ jQuery(function($){
 	checkout_form.on( 'checkout_place_order', paymentRequest );
 
 });
+
+
+jQuery("input").change(function(){
+  alert("The text has been changed.");
+});

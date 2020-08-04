@@ -149,9 +149,6 @@ $this->publishable_key = $this->testmode ? $this->get_option( 'test_publishable_
 // This action hook saves the settings
 add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 
-// We need custom JavaScript to obtain a token
-add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
-
 // You can also register a webhook here
 // add_action( 'woocommerce_api_{webhook name}', array( $this, 'webhook' ) );
 }
@@ -182,42 +179,6 @@ $this->form_fields = array(
 );
 }
 
-public function payment_scripts() {
-
-	// we need JavaScript to process a token only on cart/checkout pages, right?
-	if ( ! is_cart() && ! is_checkout() && ! isset( $_GET['pay_for_order'] ) ) {
-		return;
-	}
-
-	// if our payment gateway is disabled, we do not have to enqueue JS too
-	if ( 'no' === $this->enabled ) {
-		return;
-	}
-
-	// no reason to enqueue JavaScript if API keys are not set
-	if ( empty( $this->private_key ) || empty( $this->publishable_key ) ) {
-		return;
-	}
-
-	// do not work with card detailes without SSL unless your website is in a test mode
-	if ( ! $this->testmode && ! is_ssl() ) {
-		return;
-	}
-
-	/*// let's suppose it is our payment processor JavaScript that allows to obtain a token
-	wp_enqueue_script( 'misha_js', 'https://www.mishapayments.com/api/token.js' );
-
-	// and this is our custom JS in your plugin directory that works with token.js
-	wp_register_script( 'woocommerce_misha', plugins_url( 'misha.js', __FILE__ ), array( 'jquery', 'misha_js' ) );
-
-	// in most payment processors you have to use PUBLIC KEY to obtain a token
-	wp_localize_script( 'woocommerce_misha', 'misha_params', array(
-	'publishableKey' => $this->publishable_key
-	) );
-
-	wp_enqueue_script( 'woocommerce_misha' );*/
-
-}
 
 public function payment_fields() {
 
@@ -369,7 +330,7 @@ function mpesa_request_payment(){
 
 
 
-		$total = 1;
+		echo $total = ceil(WC()->cart->total);
 
 		$url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
 
