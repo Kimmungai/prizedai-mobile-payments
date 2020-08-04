@@ -1,2 +1,11 @@
 @import 'modules/tabs';
 @import 'modules/checkbox';
+
+.prizedai-hidden{
+  display: none!important;
+}
+.prizedai-ajax-loader{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

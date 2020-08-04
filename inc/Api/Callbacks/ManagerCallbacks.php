@@ -86,4 +86,14 @@ class ManagerCallbacks extends BaseController
     echo '<div class="' . $classes . '"><input type="text" id="' . $name . '" name="' . $option_name . '[' . $name . ']" value="'.$value.'" class="" ' . $classes . '><label for="' . $name . '"><div></div></label></div>';
   }
 
+  public function prizedaiMobilePaymentsTextAreaField( $args )
+  {
+    $name = $args['label_for'];
+		$classes = $args['class'];
+		$option_name = $args['option_name'];
+		$input = get_option( $option_name );
+    $value = isset($input[$name]) ? $input[$name] : '';
+    echo '<div class="' . $classes . '"><textarea  id="' . $name . '" name="' . $option_name . '[' . $name . ']"  class="" ' . $classes . '>'.$value.'</textarea><label for="' . $name . '"><div></div></label></div>';
+  }
+
 }

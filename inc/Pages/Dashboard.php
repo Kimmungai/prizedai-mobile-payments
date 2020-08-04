@@ -123,7 +123,7 @@ class Dashboard extends BaseController
 			$args[] = array(
 				'id' => $key,
 				'title' => $value,
-				'callback' => array( $this->callbacks_mngr, ( $key == 'shortcode' ? 'prizedaiMobilePaymentsInputField' : 'prizedaiMobilePaymentsPasswordField'  ) ),
+				'callback' => array( $this->callbacks_mngr, ( $key == 'shortcode' ? 'prizedaiMobilePaymentsInputField' : ( $key == 'live' ? 'prizedaiMobilePaymentsCheckboxField' : 'prizedaiMobilePaymentsPasswordField' )  ) ),
 				'page' => 'prizedai_mobile_payments_mpesa',
 				'section' => 'prizedai_mobile_payments_mpesa_index',
 				'args' => array(
@@ -138,7 +138,7 @@ class Dashboard extends BaseController
 			$args[] = array(
 				'id' => $key,
 				'title' => $value,
-				'callback' => array( $this->callbacks_mngr, ( $key == 'apikey' ? 'prizedaiMobilePaymentsPasswordField' : 'prizedaiMobilePaymentsInputField'  ) ),
+				'callback' => array( $this->callbacks_mngr, ( $key == 'apikey' ? 'prizedaiMobilePaymentsPasswordField' : ( $key == 'enabled' ? 'prizedaiMobilePaymentsCheckboxField' : ( $key == 'order_content' ? 'prizedaiMobilePaymentsTextAreaField' : 'prizedaiMobilePaymentsInputField') )  ) ),
 				'page' => 'prizedai_mobile_payments_sms',
 				'section' => 'prizedai_mobile_payments_sms_index',
 				'args' => array(

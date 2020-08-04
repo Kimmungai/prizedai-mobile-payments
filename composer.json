@@ -10,7 +10,9 @@
         }
     ],
     "minimum-stability": "dev",
-    "require": {},
+    "require": {
+      "africastalking/africastalking": "^2.2"
+    },
     "autoload":{
       "psr-4":{"PrizedAI\\":"./inc"}
     }

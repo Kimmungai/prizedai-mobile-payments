@@ -29,6 +29,7 @@ class BaseController
     );
 
     $this->mpesaFields = array(
+      'live' => 'Live environment?',
       'consumer_key' => 'Consumer key',
       'consumer_secret' => 'Consumer secret',
       'passkey' => 'Passkey',
@@ -36,9 +37,12 @@ class BaseController
     );
 
     $this->smsFields = array(
+      'enabled' => 'Send sms on order received?',
       'username' => 'Username',
       'apikey' => 'Api key',
       'from' => 'From',
+      'order_content' => 'Order received sms',
+
     );
 
   }

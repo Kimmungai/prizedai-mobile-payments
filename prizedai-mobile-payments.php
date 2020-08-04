@@ -43,6 +43,7 @@ if( file_exists( dirname(__FILE__).'/vendor/autoload.php' ) )
 
 use PrizedAI\Base\Activate;
 use PrizedAI\Base\Deactivate;
+use PrizedAI\Base\SMS;
 
 /*
 *Code that excutes on activation
@@ -74,8 +75,9 @@ add_action( 'plugins_loaded', 'prizedAiMobilePaymentsWoocommerceInit', 11 );
 
 add_action( 'init', function() {
 
-    add_rewrite_rule( '^/scanner/?([^/]*)/?', 'index.php?scanner_action=1', 'top' );
+    add_rewrite_rule( '^/callback/?([^/]*)/?', 'index.php?mpesa_callback_action=1', 'top' );
     add_rewrite_rule( '^/payment/?([^/]*)/?', 'index.php?payment_action=1', 'top' );
+    add_rewrite_rule( '^/confirm/?([^/]*)/?', 'index.php?payment_status=1', 'top' );
 
 
 } );
@@ -86,9 +88,9 @@ add_filter( 'query_vars', function( $query_vars ) {
 
 
 
-    $query_vars []= 'scanner_action';
+    $query_vars []= 'mpesa_callback_action';
     $query_vars []= 'payment_action';
-
+    $query_vars []= 'payment_status';
     return $query_vars;
 
 } );
@@ -98,22 +100,15 @@ add_filter( 'query_vars', function( $query_vars ) {
 add_action( 'wp', function() {
 
 
+    if ( get_query_var( 'payment_action' ) )
+		    prizedai_mpesa_request_payment();
 
-    if ( get_query_var( 'scanner_action' ) ) {
+    if ( get_query_var( 'payment_status' ) )
+		  prizedai_confirm_payment_status();
 
-        // invoke scanner function
+    if ( get_query_var( 'mpesa_callback_action' ) )
+		  prizedai_mpesa_callback();
 
-		woompesa_scan_transactions();
-
-    }
-
-    if ( get_query_var( 'payment_action' ) ) {
-
-        // invoke payment function
-
-		mpesa_request_payment();
-
-    }
 
 } );
 
@@ -184,11 +179,8 @@ public function payment_fields() {
 
 	// ok, let's display some description before the payment form
 	if ( $this->description ) {
-		// you can instructions for test mode, I mean test card numbers etc.
-		if ( $this->testmode ) {
-			$this->description .= ' TEST MODE ENABLED. In test mode, you can use the card numbers listed in <a href="#" target="_blank" rel="noopener noreferrer">documentation</a>.';
-			$this->description  = trim( $this->description );
-		}
+    $this->description  = trim( $this->description );
+
 		// display the description with <p> tags etc.
 		echo wpautop( wp_kses_post( $this->description ) );
 	}
@@ -200,11 +192,20 @@ public function payment_fields() {
 	do_action( 'woocommerce_credit_card_form_start', $this->id );
 
 	// I recommend to use inique IDs, because other gateways could already use #ccNo, #expdate, #cvc
-	echo '<div class="form-row">
+	echo '<div id="peizedai-mpesa-checkout-form" class="form-row">
+          <div id="peizedai-mpesa-loader" class="prizedai-ajax-loader prizedai-hidden">
+            <img src="'.plugin_dir_url( __FILE__ ).'assets/img/loader.gif" height="31" width="31" />
+          </div>
           <label>Mpesa phone number <span class="required">*</span></label>
 		      <input id="prizedai-mpesa-number" type="text" autocomplete="off">
-          <small class="hidden" id="prizedai-mpesa-number-helper">Valid format: <strong>+254xxxxxxxxx</strong></small>
+          <small class="prizedai-hidden" id="prizedai-mpesa-number-helper">Valid format: <strong>+254xxxxxxxxx</strong></small>
+          <span id="prizedai-mpesa-field-controls" class="prizedai-hidden" >
+            <button type="button" onclick="prizedai_complete_mpesa()">Complete</button>
+            <button type="button" onclick="prizedai_hide_submit(false)">Retry</button>
+          </span>
 		    </div>
+        <p id="prizedai-mpesa-status-info"></p>
+
 		<div class="clear"></div>';
 
 	do_action( 'woocommerce_credit_card_form_end', $this->id );
@@ -230,64 +231,22 @@ public function process_payment( $order_id ) {
 	// we need it to get any order detailes
 	$order = wc_get_order( $order_id );
 
+  // we received the payment
+  $order->payment_complete();
+  $order->reduce_order_stock();
+
+  // some notes to customer (replace true with false to make it private)
+  //$order->add_order_note( 'Hey, your order is paid! Thank you!', true );
+
+  // Empty cart
+  $woocommerce->cart->empty_cart();
+
+  //send sms
+
   return array(
     'result' => 'success',
     'redirect' => $this->get_return_url( $order )
   );
-
-
-	/*
- 	 * Array with parameters for API interaction
-	 */
-	$args = array(
-
-
-
-	);
-
-	/*
-	 * Your API interaction could be built with wp_remote_post()
- 	 */
-	 $response = wp_remote_post( '{payment processor endpoint}', $args );
-
-
-	// if( !is_wp_error( $response ) ) {
-  if( 0 ){
-
-    return $this->mpesa_request_payment();
-
-		 $body = json_decode( $response['body'], true );
-
-		 // it could be different depending on your payment processor
-		 if ( $body['response']['responseCode'] == 'APPROVED' ) {
-
-			// we received the payment
-			$order->payment_complete();
-			$order->reduce_order_stock();
-
-			// some notes to customer (replace true with false to make it private)
-			$order->add_order_note( 'Hey, your order is paid! Thank you!', true );
-
-			// Empty cart
-			$woocommerce->cart->empty_cart();
-
-			// Redirect to the thank you page
-			return array(
-				'result' => 'success',
-				'redirect' => $this->get_return_url( $order )
-			);
-
-		 } else {
-			wc_add_notice(  'Please try again.', 'error' );
-			return;
-		}
-
-	} else {
-		wc_add_notice(  'Connection error.', 'error' );
-
-		return;
-	}
-
 }
 
 public function webhook() {
@@ -326,21 +285,28 @@ exit();
 
 //Payments start
 
-function mpesa_request_payment(){
+function prizedai_mpesa_request_payment(){
+     $data = array();
+		 $total = ceil(WC()->cart->total);
+     $option = get_option( 'prizedai_mobile_payments_mpesa' );
+     $phone = prizedai_clean_phone_number($_POST['mpesaPhoneNumber']);
+     $consumer_key = isset($option['consumer_key']) ? $option['consumer_key'] : NULL;
+     $consumer_secret = isset($option['consumer_secret']) ? $option['consumer_secret'] : NULL;
+     $passkey = isset($option['passkey']) ? $option['passkey'] : NULL;
+     //$live = isset($option['live']) ? $option['live'] : NULL;
+
+     $baseUrl = isset($option['live']) ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke';
 
 
-
-		echo $total = ceil(WC()->cart->total);
-
-		$url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
+     $url = $baseUrl.'/oauth/v1/generate?grant_type=client_credentials';
 
 
-
-    $YOUR_APP_CONSUMER_KEY = 'l1XpJsuPoThwNfHARKX4I9GwQgvgiSu5';
-
-    $YOUR_APP_CONSUMER_SECRET = 'RxAKb7qr4AbzrYM1';
-
-    $credentials = base64_encode($YOUR_APP_CONSUMER_KEY . ':' . $YOUR_APP_CONSUMER_SECRET);
+     if( !$consumer_key || !$consumer_secret || !$passkey )
+     {
+       echo 0;
+       exit();
+     }
+     $credentials = base64_encode($consumer_key . ':' . $consumer_secret);
 
 
 
@@ -366,8 +332,8 @@ function mpesa_request_payment(){
 
 	else {
 
-		echo json_encode(array("rescode" => "1", "resmsg" => "Error, unable to send payment request"));
-
+		//echo json_encode(array("rescode" => "1", "resmsg" => "Error, unable to send payment request"));
+    echo 0;
 		exit();
 
   }
@@ -380,9 +346,9 @@ function mpesa_request_payment(){
 
 
 
-        ////Starting lipa na mpesa process
+    ////Starting lipa na mpesa process
 
-        $url = 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
+    $url = $baseUrl.'/mpesa/stkpush/v1/processrequest';
 
 
 
@@ -398,11 +364,12 @@ function mpesa_request_payment(){
 
 		//Generate the password//
 
-		$shortcd = 174379;
+
+		$paybill = isset($option['shortcode']) ? $option['shortcode'] : 174379;
 
 		$timestamp = date("YmdHis");
 
-		$b64 = $shortcd.'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'.$timestamp;
+		$b64 = $paybill.$passkey.$timestamp;
 
 		$pwd = base64_encode($b64);
 
@@ -416,7 +383,7 @@ function mpesa_request_payment(){
 
             //Fill in the request parameters with valid values
 
-            'BusinessShortCode' => $shortcd,
+            'BusinessShortCode' => $paybill,
 
 			'Password' => $pwd,
 
@@ -426,13 +393,13 @@ function mpesa_request_payment(){
 
             'Amount' => $total,
 
-            'PartyA' => $_POST['mpesaPhoneNumber'],
+            'PartyA' => $phone,
 
-            'PartyB' => $shortcd,
+            'PartyB' => $paybill,
 
-            'PhoneNumber' => $_POST['mpesaPhoneNumber'],
+            'PhoneNumber' => $phone,
 
-            'CallBackURL' => $callback_url.'/index.php?scanner_action=1',
+            'CallBackURL' => $callback_url.'/index.php?mpesa_callback_action=1',
 
             'AccountReference' => time(),
 
@@ -454,22 +421,35 @@ function mpesa_request_payment(){
 
 		$response_array = json_decode('{"callback_results":[' . $response['body'] . ']}');
 
+
 		if(array_key_exists("ResponseCode", $response_array->callback_results[0]) && $response_array->callback_results[0]->ResponseCode == 0){
 
 			$response_array->callback_results[0]->MerchantRequestID;
-			echo json_encode(array("rescode" => "0", "resmsg" => "Request accepted for processing, check your phone to enter M-PESA pin"));
+			//echo json_encode(array("rescode" => "0", "resmsg" => "Request accepted for processing, check your phone to enter M-PESA pin"));
 
+      $data['result_code'] = 0;
+      $data['result_desc'] = $response_array->callback_results[0]->ResponseDescription;
+      $data['merchant_request_id'] = $response_array->callback_results[0]->MerchantRequestID;
+      $data['checkout_request_id'] = $response_array->callback_results[0]->CheckoutRequestID;
 
 
 		}
 
 		else{
 
-			echo json_encode(array("rescode" => "1", "resmsg" => "Payment request failed, please try again"));
-
-
+			//echo json_encode(array("rescode" => "1", "resmsg" => "Payment request failed, please try again"));
+      $data['result_code'] = 1;
+      $data['result_desc'] = NULL;
+      $data['merchant_request_id'] = NULL;
+      $data['checkout_request_id'] = NULL;
+      echo 0;
+      exit();
 
 		}
+
+    $data['phone_number'] = $phone;
+
+    echo prizedai_store_gateway_response( 'mpesa', $data );
 
         exit();
 
@@ -479,4 +459,74 @@ function mpesa_request_payment(){
 
 
 
+}
+
+function prizedai_clean_phone_number($phone)
+{
+    $phone = str_replace("-", "", $phone);
+    $phone = str_replace( array(' ', '<', '>', '&', '{', '}', '*', "+", '!', '@', '#', "$", '%', '^', '&'), "", $phone );
+	  $phone = "254".substr($phone, -9);
+    return $phone;
+}
+
+function prizedai_store_gateway_response( $gateway, $data )
+{
+  global $wpdb;
+
+  switch ($gateway) {
+    case 'mpesa':
+
+      $name = $wpdb->prefix .'prizedai_mobile_payments';
+
+      $sql = ' INSERT INTO '.$name.' ( gateway, phone_number, merchant_request_id, checkout_request_id, result_code, result_desc,created_at ) VALUES ( "mpesa", "'.$data['phone_number'].'", "'.$data['merchant_request_id'].'", "'.$data['checkout_request_id'].'", "'.$data['result_code'].'", "'.$data['result_desc'].'", "'.time().'" );';
+
+      $wpdb->query( $sql );
+
+      return $wpdb->insert_id;
+
+    break;
+
+  }
+}
+
+function prizedai_confirm_payment_status()
+{
+  global $wpdb;
+  $name = $wpdb->prefix .'prizedai_mobile_payments';
+  $sql = 'SELECT status FROM '.$name.' WHERE id = '.$_POST['transactionID'].'';
+  echo $wpdb->get_var($sql);
+  exit();
+}
+
+function prizedai_mpesa_callback()
+{
+  if( !isset($_POST["Body"]) )
+    exit();
+  $body = $_POST["Body"];
+  $callback = $body["stkCallback"];
+
+
+  if( !isset($callback["ResultCode"]) )
+    exit();
+  if( $callback["ResultCode"] != "0" )
+    exit();
+
+  global $wpdb;
+  $name = $wpdb->prefix .'prizedai_mobile_payments';
+  $sql = 'UPDATE '.$name.' SET status = 1 WHERE  merchant_request_id = "'.$callback["MerchantRequestID"].'"';
+  echo $wpdb->query($sql);
+
+  $option = get_option( 'prizedai_mobile_payments_sms' );
+
+  if( !isset($option['enabled']) )
+    exit();
+
+  $sql2 = 'SELECT phone_number FROM '.$name.' WHERE merchant_request_id = "'.$callback["MerchantRequestID"].'"';
+
+  $recipient = $wpdb->get_var($sql2);
+
+  $content =  isset($option['order_content']) && !empty($option['order_content']) ? $option['order_content'] : 'Dear customer, your order has been received. Thank you.';
+
+  SMS::sendSMS($recipient,$content);
+  exit();
 }

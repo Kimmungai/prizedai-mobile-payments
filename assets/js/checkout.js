@@ -4,29 +4,16 @@ var successCallback = function() {
 
 	var checkout_form = jQuery( 'form.woocommerce-checkout' );
 
-	// add a token to our hidden input field
-	// console.log(data) to find the token
-	//checkout_form.find('#misha_token').val(data.token);
-
-  if( 0 ){
-
 	// deactivate the tokenRequest function event
-	checkout_form.off( 'checkout_place_order', tokenRequest );
+	checkout_form.off( 'checkout_place_order', paymentRequest );
 
 	// submit the form now
 	checkout_form.submit();
-}
-else{
-  setInterval(function(){ alert("Hello"); }, 2000);
-}
 
-};
-
-var errorCallback = function(data) {
-    console.log(data);
 };
 
 var paymentRequest = function() {
+
 
 	var mpesaPhoneNumber = jQuery( '#prizedai-mpesa-number' ).val().trim().split(' ').join('');
 
@@ -34,7 +21,7 @@ var paymentRequest = function() {
 	{
 		jQuery( '#prizedai-mpesa-number' ).css('border-bottom-color','#a94442');
 		jQuery( '#prizedai-mpesa-number-helper' ).removeClass('hidden');
-
+		return false;
 	}
 	else
 	{
@@ -43,18 +30,21 @@ var paymentRequest = function() {
 
 	}
 
-	// here will be a payment gateway function that process all the card data from your form,
-	// maybe it will need your Publishable API key which is misha_params.publishableKey
-	// and fires successCallback() on success and errorCallback on failure
+	prizedai_hide_submit( hide = true );
   jQuery.ajax({
         type: "POST",
-        url:"/kaziplace/index.php?payment_action=1",
+        url:"/index.php?payment_action=1",
         data:{
             mpesaPhoneNumber:mpesaPhoneNumber,
         },
-        success:function(data){alert(data)
-          //successCallback();
-            //setInterval(function(){ alert("Hello"); }, 2000);
+        success:function(data){
+					if( data !== '0' )
+					{
+						jQuery( '#prizedai-mpesa-status-info' ).html( '<strong>Please enter MPESA you pin on your phone.</strong>' );
+						transactionID = data;
+					}
+					else
+						jQuery( '#prizedai-mpesa-status-info' ).html( '<strong>Failed. please try again</strong>' );
         }
     });
 	return false;
@@ -65,6 +55,12 @@ jQuery(function($){
 
 	var checkout_form = $( 'form.woocommerce-checkout' );
 	checkout_form.on( 'checkout_place_order', paymentRequest );
+	showLoader = false;
+	transactionID = null;
+
+	$("#billing_phone").keyup(function(){
+	  $('#prizedai-mpesa-number').val( $("#billing_phone").val() );
+	});
 
 });
 
@@ -72,3 +68,46 @@ jQuery(function($){
 jQuery("input").change(function(){
   alert("The text has been changed.");
 });
+
+jQuery(document).ajaxStart(function(){
+	if( showLoader )
+	{
+		jQuery('#peizedai-mpesa-loader').removeClass("prizedai-hidden");
+		jQuery('#prizedai-mpesa-field-controls').addClass("prizedai-hidden");
+	}
+});
+
+jQuery(document).ajaxStop(function(){
+	if( showLoader )
+	{
+		jQuery('#peizedai-mpesa-loader').addClass("prizedai-hidden");
+		jQuery('#prizedai-mpesa-field-controls').removeClass("prizedai-hidden");
+	}
+
+
+});
+
+function prizedai_hide_submit( hide = true )
+{
+	jQuery('#place_order').attr('disabled',hide);
+	showLoader = hide;
+
+}
+
+function prizedai_complete_mpesa()
+{
+	showLoader = true;
+	jQuery.ajax({
+        type: "POST",
+        url:"/index.php?payment_status=1",
+        data:{
+            transactionID:transactionID,
+        },
+        success:function(data){
+					if( data === '1' )
+						successCallback();
+					else
+						jQuery( '#prizedai-mpesa-status-info' ).html( '<strong>Payment not received. Please wait.</strong>' );
+        }
+    });
+}
