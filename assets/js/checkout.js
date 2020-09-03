@@ -14,6 +14,16 @@ var successCallback = function() {
 
 var paymentRequest = function() {
 
+	var is_payment_method = jQuery('#payment_method_prizedai').is(':checked');
+
+	if( !is_payment_method ) // if not prizedai gateway continue to form submit
+	{
+		successCallback();
+		return false;
+	}
+
+
+
 
 	var mpesaPhoneNumber = jQuery( '#prizedai-mpesa-number' ).val().trim().split(' ').join('');
 
@@ -62,12 +72,23 @@ jQuery(function($){
 	  $('#prizedai-mpesa-number').val( $("#billing_phone").val() );
 	});
 
+
+});
+
+jQuery(function($){
+    $( 'body' )
+    .on( 'updated_checkout', function() {
+        $('input[name="payment_method"]').change(function(){
+            var is_payment_method = $('#payment_method_prizedai').is(':checked');
+						if( !is_payment_method )
+							prizedai_hide_submit( false )
+        });
+    });
 });
 
 
-jQuery("input").change(function(){
-  alert("The text has been changed.");
-});
+
+
 
 jQuery(document).ajaxStart(function(){
 	if( showLoader )

@@ -44,6 +44,7 @@ if( file_exists( dirname(__FILE__).'/vendor/autoload.php' ) )
 use PrizedAI\Base\Activate;
 use PrizedAI\Base\Deactivate;
 use PrizedAI\Base\SMS;
+use PrizedAI\Base\PrizedWoocommerce;
 
 /*
 *Code that excutes on activation
@@ -112,159 +113,9 @@ add_action( 'wp', function() {
 
 } );
 
-function prizedAiMobilePaymentsWoocommerceInit() {
-    if( class_exists( 'WC_Payment_Gateway' ) ) {
-        class PrizedAIWoocommerceMpesaGateway extends WC_Payment_Gateway {
-          public function __construct() {
-
-$this->id = 'prizedai'; // payment gateway plugin ID
-$this->icon = ''; // URL of the icon that will be displayed on checkout page near your gateway name
-$this->has_fields = true; // in case you need a custom credit card form
-$this->method_title = 'PrizedAI payments';
-$this->method_description = 'Accept mpesa payments easily. Your customers will receive an STK push and automatically redirected.'; // will be displayed on the options page
-
-// gateways can support subscriptions, refunds, saved payment methods,
-// but in this tutorial we begin with simple payments
-$this->supports = array(
-  'products'
-);
-
-// Method with all the options fields
-$this->init_form_fields();
-
-// Load the settings.
-$this->init_settings();
-$this->title = $this->get_option( 'title' );
-$this->description = $this->get_option( 'description' );
-$this->enabled = $this->get_option( 'enabled' );
-$this->testmode = 'yes' === $this->get_option( 'testmode' );
-$this->private_key = $this->testmode ? $this->get_option( 'test_private_key' ) : $this->get_option( 'private_key' );
-$this->publishable_key = $this->testmode ? $this->get_option( 'test_publishable_key' ) : $this->get_option( 'publishable_key' );
-
-// This action hook saves the settings
-add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
-
-// You can also register a webhook here
-// add_action( 'woocommerce_api_{webhook name}', array( $this, 'webhook' ) );
-}
-
-public function init_form_fields(){
-
-$this->form_fields = array(
-'enabled' => array(
-'title'       => 'Enable/Disable',
-'label'       => 'Enable PrizedAI mobile payments',
-'type'        => 'checkbox',
-'description' => '',
-'default'     => 'no'
-),
-'title' => array(
-'title'       => 'Title',
-'type'        => 'text',
-'description' => 'This controls the title which the user sees during checkout.',
-'default'     => 'Mpesa',
-'desc_tip'    => true,
-),
-'description' => array(
-'title'       => 'Description',
-'type'        => 'textarea',
-'description' => 'This controls the description which the user sees during checkout.',
-'default'     => 'Pay with your credit card via our super-cool payment gateway.',
-),
-);
-}
-
-
-public function payment_fields() {
-
-	// ok, let's display some description before the payment form
-	if ( $this->description ) {
-    $this->description  = trim( $this->description );
-
-		// display the description with <p> tags etc.
-		echo wpautop( wp_kses_post( $this->description ) );
-	}
-
-	// I will echo() the form, but you can close PHP tags and print it directly in HTML
-	echo '<fieldset id="wc-' . esc_attr( $this->id ) . '-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">';
-
-	// Add this action hook if you want your custom payment gateway to support it
-	do_action( 'woocommerce_credit_card_form_start', $this->id );
-
-	// I recommend to use inique IDs, because other gateways could already use #ccNo, #expdate, #cvc
-	echo '<div id="peizedai-mpesa-checkout-form" class="form-row">
-          <div id="peizedai-mpesa-loader" class="prizedai-ajax-loader prizedai-hidden">
-            <img src="'.plugin_dir_url( __FILE__ ).'assets/img/loader.gif" height="31" width="31" />
-          </div>
-          <label>Mpesa phone number <span class="required">*</span></label>
-		      <input id="prizedai-mpesa-number" type="text" autocomplete="off">
-          <small class="prizedai-hidden" id="prizedai-mpesa-number-helper">Valid format: <strong>+254xxxxxxxxx</strong></small>
-          <span id="prizedai-mpesa-field-controls" class="prizedai-hidden" >
-            <button type="button" onclick="prizedai_complete_mpesa()">Complete</button>
-            <button type="button" onclick="prizedai_hide_submit(false)">Retry</button>
-          </span>
-		    </div>
-        <p id="prizedai-mpesa-status-info"></p>
-
-		<div class="clear"></div>';
-
-	do_action( 'woocommerce_credit_card_form_end', $this->id );
-
-	echo '<div class="clear"></div></fieldset>';
-
-}
-
-/*public function validate_fields(){
-
-	if( empty( $_POST[ 'billing_first_name' ]) ) {
-		wc_add_notice(  'First name is required!', 'error' );
-		return false;
-	}
-	return true;
-
-}*/
-
-public function process_payment( $order_id ) {
-
-	global $woocommerce;
-
-	// we need it to get any order detailes
-	$order = wc_get_order( $order_id );
-
-  // we received the payment
-  $order->payment_complete();
-  $order->reduce_order_stock();
-
-  // some notes to customer (replace true with false to make it private)
-  //$order->add_order_note( 'Hey, your order is paid! Thank you!', true );
-
-  // Empty cart
-  $woocommerce->cart->empty_cart();
-
-  //send sms
-
-  return array(
-    'result' => 'success',
-    'redirect' => $this->get_return_url( $order )
-  );
-}
-
-public function webhook() {
-
-	$order = wc_get_order( $_GET['id'] );
-	$order->payment_complete();
-	$order->reduce_order_stock();
-
-	update_option('webhook_debug', $_GET);
-}
-
-
-
-
-
-}
-}
-
+function prizedAiMobilePaymentsWoocommerceInit()
+{
+     PrizedWoocommerce::init();
 }
 
 add_filter( 'woocommerce_payment_gateways', 'add_to_woo_noob_payment_gateway');
@@ -274,20 +125,12 @@ function add_to_woo_noob_payment_gateway( $gateways ) {
     return $gateways;
 }
 
-/////Scanner start
-
-function woompesa_scan_transactions(){
-//The code below is invoked after customer clicks on the Confirm Order button
-echo json_encode(array("rescode" => "76", "resmsg" => "Callback processing has been disabled, please download the Pro Version of the plugin."));
-
-exit();
-}
-
 //Payments start
 
 function prizedai_mpesa_request_payment(){
      $data = array();
 		 $total = ceil(WC()->cart->total);
+     //$total = 1;
      $option = get_option( 'prizedai_mobile_payments_mpesa' );
      $phone = prizedai_clean_phone_number($_POST['mpesaPhoneNumber']);
      $consumer_key = isset($option['consumer_key']) ? $option['consumer_key'] : NULL;
@@ -357,9 +200,6 @@ function prizedai_mpesa_request_payment(){
 		$domainName = $_SERVER['HTTP_HOST'].'/';
 
 		$callback_url =  $protocol.$domainName;
-
-    $callback_url = 'https://biznesskit.com/';//delete
-
 
 
 		//Generate the password//
@@ -437,7 +277,6 @@ function prizedai_mpesa_request_payment(){
 
 		else{
 
-			//echo json_encode(array("rescode" => "1", "resmsg" => "Payment request failed, please try again"));
       $data['result_code'] = 1;
       $data['result_desc'] = NULL;
       $data['merchant_request_id'] = NULL;
@@ -500,20 +339,26 @@ function prizedai_confirm_payment_status()
 
 function prizedai_mpesa_callback()
 {
-  if( !isset($_POST["Body"]) )
-    exit();
-  $body = $_POST["Body"];
-  $callback = $body["stkCallback"];
+  $postData = file_get_contents('php://input');
+  $encapsulate = '{"callback_results":[' . $postData . ']}';
+  $json_data = json_decode($encapsulate, true);
+  $key = 0;
+
+  $merchant_id = $json_data["callback_results"][$key]["Body"]["stkCallback"]["MerchantRequestID"];
 
 
-  if( !isset($callback["ResultCode"]) )
+  $rescode = $json_data["callback_results"][$key]["Body"]["stkCallback"]["ResultCode"];
+
+
+  if( !$merchant_id  )
     exit();
-  if( $callback["ResultCode"] != "0" )
+
+  if( $rescode != "0" )
     exit();
 
   global $wpdb;
   $name = $wpdb->prefix .'prizedai_mobile_payments';
-  $sql = 'UPDATE '.$name.' SET status = 1 WHERE  merchant_request_id = "'.$callback["MerchantRequestID"].'"';
+  $sql = 'UPDATE '.$name.' SET status = 1 WHERE  merchant_request_id = "'.$merchant_id.'"';
   echo $wpdb->query($sql);
 
   $option = get_option( 'prizedai_mobile_payments_sms' );
@@ -521,7 +366,7 @@ function prizedai_mpesa_callback()
   if( !isset($option['enabled']) )
     exit();
 
-  $sql2 = 'SELECT phone_number FROM '.$name.' WHERE merchant_request_id = "'.$callback["MerchantRequestID"].'"';
+  $sql2 = 'SELECT phone_number FROM '.$name.' WHERE merchant_request_id = "'.$merchant_id.'"';
 
   $recipient = $wpdb->get_var($sql2);
 

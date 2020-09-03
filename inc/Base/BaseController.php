@@ -23,7 +23,7 @@ class BaseController
     $this->plugin = "$this->plugin_basename/$this->plugin_basename.php";
 
     $this->managers = array(
-      'cpt_manager' => 'Save payment records',
+      //'cpt_manager' => 'Save payment records',
       'mpesa' => 'Mpesa Payments',
       'sms' => 'Send sms',
     );
