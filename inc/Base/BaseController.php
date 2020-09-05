@@ -23,9 +23,7 @@ class BaseController
     $this->plugin = "$this->plugin_basename/$this->plugin_basename.php";
 
     $this->managers = array(
-      //'cpt_manager' => 'Save payment records',
       'mpesa' => 'Mpesa Payments',
-      'sms' => 'Send sms',
     );
 
     $this->mpesaFields = array(
@@ -34,15 +32,6 @@ class BaseController
       'consumer_secret' => 'Consumer secret',
       'passkey' => 'Passkey',
       'shortcode' => 'Short code',
-    );
-
-    $this->smsFields = array(
-      'enabled' => 'Send sms on order received?',
-      'username' => 'Username',
-      'apikey' => 'Api key',
-      'from' => 'From',
-      'order_content' => 'Order received sms',
-
     );
 
   }

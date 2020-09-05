@@ -43,7 +43,7 @@ class ManagerCallbacks extends BaseController
 
   public function prizedaiMobilePaymentsAdminSectionManager( )
   {
-    echo "Manage the sections and features of this plugin";
+    echo "Enable or disable a feature";
   }
 
   public function prizedaiMobilePaymentsMpesaSectionManager( )
