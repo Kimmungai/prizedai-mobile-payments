@@ -1,5 +1,5 @@
 # Prized Ai Mobile Payments
 
-Full list of features
-
-*Modular Administration pages
+This plugin adds Mpesa to WooCommerce payment gateways. After installation, navigate to "PrizedAI payments" and;
+*Enable Mpesa payement, 
+*Click on "Api credentials" to add your Daraja API details.
