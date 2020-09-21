@@ -322,7 +322,7 @@ function prizedai_mpesa_request_payment()
 
             'CallBackURL' => $callback_url . '/index.php?mpesa_callback_action=1',
 
-            'AccountReference' => $phone ,
+            'AccountReference' => get_bloginfo( 'name' ),
 
             'TransactionDesc' => 'Sending a lipa na mpesa request'
 
